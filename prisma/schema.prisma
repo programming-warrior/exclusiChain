@@ -17,7 +17,7 @@ model Brand{
   contact_email String
   contact_phone String
   website_url String
-  social_links String[]
+  social_links Json
   location String
   created_at DateTime @default(now())
   editions Edition[]
@@ -49,10 +49,10 @@ model Product{
   specification String
   color String
   edition Edition @relation(fields: [edition_id], references: [id])
-  brandId String
-  brand Brand @relation(fields: [brandId], references: [id])
-  ownerId String @default("")
-  owner User @relation(fields: [ownerId], references: [id])
+  brandId String?
+  brand Brand? @relation(fields: [brandId], references: [id])
+  ownerId String?
+  owner User? @relation(fields: [ownerId], references: [id])
 }
 
 model User{

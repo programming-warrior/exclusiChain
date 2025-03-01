@@ -1,8 +1,9 @@
 import { Router } from "express";
-import prisma from "../../utils/db";
+import { PrismaClient } from "@prisma/client";
 import { authMiddleware } from "../../utils/auth";
 import jwt from "jsonwebtoken";
 import { EditionStatus } from "@prisma/client";
+const prisma = new PrismaClient();
 const BrandRouter = Router();
 
 BrandRouter.post("/on-board", async (req: any, res: any) => {
@@ -25,10 +26,11 @@ BrandRouter.post("/on-board", async (req: any, res: any) => {
     let brand = await prisma.brand.findFirst({
       where: { brand_name: brand_name },
     });
+    console.log(brand);
 
     if (brand)
       return res.status(400).json({ message: "brand already onboard" });
-
+    console.log(social_links);
     brand = await prisma.brand.create({
       data: {
         brand_name,
@@ -47,7 +49,7 @@ BrandRouter.post("/on-board", async (req: any, res: any) => {
 
     const token = jwt.sign(
       { brand_id: brand.id, brand_name: brand.brand_name },
-      process.env.JWT_SECRET!,
+      process.env.SECRET_KEY!,
       { expiresIn: "7d" }
     );
 
@@ -62,9 +64,9 @@ BrandRouter.post("/on-board", async (req: any, res: any) => {
   }
 });
 
-BrandRouter.post("/add-edition", authMiddleware, async (req: any, res: any) => {
-  if (!req.user || !req.user.brand_name)
-    return res.status(401).json({ error: "Unauthorized" });
+BrandRouter.post("/add-edition", async (req: any, res: any) => {
+  // if (!req.user || !req.user.brand_name)
+  //   return res.status(401).json({ error: "Unauthorized" });
   const {
     edition_title,
     edition_description,
@@ -72,6 +74,7 @@ BrandRouter.post("/add-edition", authMiddleware, async (req: any, res: any) => {
     product_specification,
     product_colors,
     product_quantity,
+    brand_name,
   } = req.body;
 
   if (
@@ -84,45 +87,63 @@ BrandRouter.post("/add-edition", authMiddleware, async (req: any, res: any) => {
   )
     return res.status(400).json({ error: "invalid input" });
 
-  const brand = await prisma.brand.findFirst({
-    where: {
-      brand_name: req.user.brand_name,
-    },
-  });
-
-  if (!brand) {
-    return res.status(404).json({ error: "Brand not found" });
-  }
-
-  const edition = await prisma.edition.create({
-    data: {
-      title: edition_title,
-      description: edition_description,
-      brandId: brand.id,
-      quantity: product_quantity,
-      colors: product_colors,
-      products: {
-        create: {
-          title: product_title,
-          specification: product_specification,
-          color:
-            product_colors[Math.floor(Math.random() * product_colors.length)],
-          brandId: brand.id,
-          ownerId: brand.id,
-        },
+  try {
+    const brand = await prisma.brand.findFirst({
+      where: {
+        brand_name: brand_name,
       },
-    },
-  });
+    });
 
-  return res.status(201).json(edition);
+    console.log(brand);
+
+    if (!brand) {
+      return res.status(404).json({ error: "Brand not found" });
+    }
+
+    const edition = await prisma.edition.create({
+      data: {
+        title: edition_title,
+        description: edition_description,
+        brandId: brand.id,
+        quantity: product_quantity,
+        colors: product_colors,
+      },
+    });
+
+    const productPromises = [];
+    for (let i = 0; i < product_quantity; i++) {
+      productPromises.push(
+        prisma.product.create({
+          data: {
+            title: product_title,
+            specification: product_specification,
+            color:
+              product_colors[Math.floor(Math.random() * product_colors.length)],
+            edition_id: edition.id,
+            brandId: brand.id,
+          },
+        })
+      );
+    }
+
+    // Wait for all product creation promises to resolve
+    await Promise.all(productPromises);
+
+    return res.status(201).json(edition);
+  } catch (error) {
+    console.error("Error adding edition:", error);
+    return res.status(500).json({ error: "Failed to add edition" });
+  }
 });
 
-BrandRouter.get("/get-editions", authMiddleware, async (req: any, res: any) => {
-  if (!req.user || !req.user.brand_name)
-    return res.status(401).json({ error: "Unauthorized" });
+BrandRouter.get("/get-editions", async (req: any, res: any) => {
+  // if (!req.user || !req.user.brand_name)
+  //   return res.status(401).json({ error: "Unauthorized" });
+  const brand_name = req.query.brand_name || "";
+  if (!brand_name) return res.status(400).json({ error: "invalid input" });
   const brand = await prisma.brand.findUnique({
     where: {
-      brand_name: req.user.brand_name,
+      brand_name: brand_name,
     },
   });
   if (!brand) return res.status(404).json({ error: "Brand not found" });
@@ -137,22 +158,18 @@ BrandRouter.get("/get-editions", authMiddleware, async (req: any, res: any) => {
   return res.status(200).json(editions);
 });
 
-BrandRouter.get(
-  "/get-edition/:id",
-  authMiddleware,
-  async (req: any, res: any) => {
-    if (!req.user || !req.user.brand_name)
-      return res.status(401).json({ error: "Unauthorized" });
+BrandRouter.get("/get-edition/:id", async (req: any, res: any) => {
+  // if (!req.user || !req.user.brand_name)
+  //   return res.status(401).json({ error: "Unauthorized" });
 
-    const edition = await prisma.edition.findUnique({
-      where: {
-        id: req.params.id,
-      },
-    });
-    if (!edition) return res.status(404).json({ error: "Edition not found" });
-    return res.status(200).json(edition);
-  }
-);
+  const edition = await prisma.edition.findUnique({
+    where: {
+      id: req.params.id,
+    },
+  });
+  if (!edition) return res.status(404).json({ error: "Edition not found" });
+  return res.status(200).json(edition);
+});
 
 //update edition status
 BrandRouter.put(

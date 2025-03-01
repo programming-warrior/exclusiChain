@@ -9,7 +9,7 @@ ProductRouter.put("/transfer-ownership/:id",  async (req: any, res: any) => {
     const redisClient = await RedisClientSingleton.getRedisClient();
     // if(!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
 
-    const user_id = req?.user?.id || "8d833252-b669-4d33-ba7c-c86e84e32014";
+    const user_id = req?.user?.id || "ada77e93-d597-4dcf-abb9-d96602e00d5d";
 
     const {
         id
@@ -50,7 +50,7 @@ ProductRouter.put("/transfer-ownership/:id",  async (req: any, res: any) => {
 });
 
 
-ProductRouter.get("/authenticate-product", async (req: any, res: any) => {
+ProductRouter.post("/authenticate-product", async (req: any, res: any) => {
     const {
         product_id,
         brand_id,
@@ -58,10 +58,10 @@ ProductRouter.get("/authenticate-product", async (req: any, res: any) => {
         email,
     } = req.body;
     if(!product_id) return res.status(400).json({ error: "invalid input" });
-
-    const product = await prisma.product.findUnique({
-        where: {
-            id: product_id
+    try {
+        const product = await prisma.product.findUnique({
+            where: {
+                id: product_id
         },
         include: {
             brand: true,
@@ -72,13 +72,17 @@ ProductRouter.get("/authenticate-product", async (req: any, res: any) => {
     if(!product) return res.status(404).json({ error: "product not found" });
 
     const owner = {
-      id: product.owner ? product.owner.id : product.brand.id,
-      name: product.owner ? product.owner.name : product.brand.brand_name,
-      email: product.owner ? product.owner.email : product.brand.contact_email,
-      phone: product.owner ? product.owner.phone : product.brand.contact_phone,
+      id: product.owner ? product.owner.id : product.brand?.id,
+      name: product.owner ? product.owner.name : product.brand?.brand_name,
+      email: product.owner ? product.owner.email : product.brand?.contact_email,
+      phone: product.owner ? product.owner.phone : product.brand?.contact_phone,
     };
     
     return res.status(200).json(owner);
+    } catch (error) {
+        console.error("Error authenticating product:", error);
+        return res.status(500).json({ error: "Failed to authenticate product" });
+    }
 });
 
 
