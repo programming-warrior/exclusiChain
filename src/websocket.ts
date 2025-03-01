@@ -1,13 +1,15 @@
 import { WebSocket, WebSocketServer } from "ws";
 import RedisClientSingleton from "./utils/redis";
 import { verifyWebSocketToken } from "./utils/auth";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 // WebSocket Clients Store
 const clients: { [username: string]: WebSocket } = {};
 
 let redisSubscriberClient: any;
 let redisCommandClient: any;
-
 
 // Handle WebSocket Connection
 async function handleConnection(wsConnection: WebSocket, req: any) {
@@ -75,7 +77,7 @@ async function subscribeToNotificationsUpdates() {
 async function main() {
   try {
     redisSubscriberClient = await RedisClientSingleton.getRedisClient();
-    redisCommandClient = await RedisClientSingleton.getRedisClient();
+    // redisCommandClient = await RedisClientSingleton.getRedisClient();
 
     // // Redis event listeners
     // redisSubscriberClient.on("error", (err:any) =>

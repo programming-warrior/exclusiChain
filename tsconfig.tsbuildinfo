@@ -1,1 +1,1 @@
-{"root":["./src/index.ts","./src/routes/brand/router.ts","./src/utils/aptosconfig.ts","./src/utils/db.ts"],"version":"5.8.2"}
+{"root":["./src/index.ts","./src/websocket.ts","./src/worker.ts","./src/jobs/notificationjob.ts","./src/routes/brand/router.ts","./src/routes/product/router.ts","./src/routes/user/router.ts","./src/utils/aptosconfig.ts","./src/utils/auth.ts","./src/utils/db.ts","./src/utils/redis.ts"],"version":"5.8.2"}

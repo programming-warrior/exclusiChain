@@ -19,8 +19,9 @@ const processJobs = async () => {
       try {
         const jobString = await redisClient.rPop(queue);
         if (jobString) {
-          const job = JSON.parse(jobString)
-
+            console.log(jobString)
+            const job = JSON.parse(jobString)
+            console.log(job)
           switch (queue) {
          
             case "NOTIFICATION_QUEUE": {

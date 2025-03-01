@@ -3,7 +3,10 @@ import dotenv from "dotenv";
 import cors from "cors";
 import BrandRouter from "./routes/brand/router";
 import prisma from "./utils/db";
-import RedisClientSingleton from "./utils/redis";
+import RedisClientSingleton from "./utils/redis";   
+import ProductRouter from "./routes/product/router";
+import UserRouter from "./routes/user/router";
+
 
 // Load environment variables
 dotenv.config();
@@ -17,6 +20,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
 app.use("/api/brand", BrandRouter);
+app.use("/api/product", ProductRouter);
+app.use("/api/user", UserRouter);
 
 // Sample route
 app.get("/", (req: Request, res: Response) => {
