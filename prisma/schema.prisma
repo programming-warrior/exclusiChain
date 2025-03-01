@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Brand{
+  id String @id @default(uuid())
+  brand_name String  @unique()
+  brand_logo String
+  blockchain_address String
+  private_key String
+  brand_description String
+  contact_email String
+  contact_phone String
+  website_url String
+  social_links String[]
+  location String
+  created_at DateTime @default(now())
+  editions Edition[]
+  products Product[]
+}
+
+enum EditionStatus{
+  active
+  inactive
+}
+
+model Edition{
+  id String @id @default(uuid())
+  title String
+  description String
+  status EditionStatus @default(active)
+  created_at DateTime @default(now())
+  colors String[]
+  quantity Int
+  products Product[]
+  brandId String
+  brand Brand @relation(fields: [brandId], references: [id])
+}
+
+model Product{
+  id String @id @default(uuid())
+  edition_id String
+  title String
+  specification String
+  color String
+  edition Edition @relation(fields: [edition_id], references: [id])
+  brandId String
+  brand Brand @relation(fields: [brandId], references: [id])
+  ownerId String @default("")
+  owner User @relation(fields: [ownerId], references: [id])
+}
+
+model User{
+  id String @id @default(uuid())
+  name String
+  phone String @unique
+  email String @unique
+  password String
+  products Product[]
+}
+
+
