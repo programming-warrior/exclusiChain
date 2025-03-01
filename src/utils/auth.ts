@@ -26,3 +26,19 @@ export const authMiddleware = (
     return res.status(403).json({ message: "Invalid or expired token." });
   }
 };
+
+export const verifyWebSocketToken = (
+    authHeader: string
+  ): any => {
+    const token = authHeader?.split(",")[1]?.trim();
+    if (!token) {
+      console.error("No token found, connection closed.");
+      return null;
+    }
+    try {
+      return jwt.verify(token, SECRET_KEY);
+    } catch (error: any) {
+      console.error("Invalid token:", error.message);
+      return null;
+    }
+  };

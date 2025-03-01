@@ -12,16 +12,7 @@ export class NotificationJob {
     public redisClient: RedisClientType
   ) {
     this.notificationEvents = [
-      "PROJECT_APPROVED",
-      "PROJECT_REJECTED",
-      "SKILL_ACHIEVED",
-      "STORY_APPROVED",
-      "STORY_REJECTED",
-      "ACHIEVEMENT_UNLOCKED",
-      "NEW_COMPETITION",
-      "COMPETITION_GRADED",
-      "SKILL_UNLOCKED",
-      "MONTHY_LEADERBOARD_REWARD"
+      "PRODUCT_TRANSFER_REQUEST"
     ];
   }
 
