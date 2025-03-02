@@ -29,6 +29,11 @@ enum EditionStatus{
   inactive
 }
 
+enum ProductStatus{
+  sold
+  unsold
+}
+
 model Edition{
   id String @id @default(uuid())
   title String
@@ -53,6 +58,7 @@ model Product{
   brand Brand? @relation(fields: [brandId], references: [id])
   ownerId String?
   owner User? @relation(fields: [ownerId], references: [id])
+  status ProductStatus @default(unsold)
 }
 
 model User{

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import { authMiddleware } from "../../utils/auth";
 import jwt from "jsonwebtoken";
-import { EditionStatus } from "@prisma/client";
+import { EditionStatus, ProductStatus } from "@prisma/client";
 const prisma = new PrismaClient();
 const BrandRouter = Router();
 
@@ -68,6 +68,24 @@ function generate4DigitNumber() {
   const randomNumber = Math.floor(1000 + Math.random() * 9000);
   return randomNumber;
 }
+BrandRouter.get('/dashboard', async (req: any, res: any) => {
+  const brand_name = req.query.brand_name 
+  if (!brand_name) return res.status(400).json({ error: "invalid input" });
+  const brand = await prisma.brand.findUnique({
+    where: { brand_name: brand_name },
+  });
+  if (!brand) return res.status(404).json({ error: "Brand not found" });
+  const editions = await prisma.edition.findMany({
+    where: { brandId: brand.id },
+  });
+  const products = await prisma.product.findMany({
+    where: { brandId: brand.id },
+  });
+  const total_inventory = products.filter((product) => product.status === ProductStatus.unsold).length;
+  const total_sale = products.filter((product) => product.status === ProductStatus.sold).length;
+  return res.status(200).json({total_skus: editions.length , total_inventory, total_sale });
+});
+
 
 BrandRouter.post("/add-edition", async (req: any, res: any) => {
   // if (!req.user || !req.user.brand_name)
