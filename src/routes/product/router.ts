@@ -17,11 +17,11 @@ function generateOTP(): number {
   return Math.floor(100000 + Math.random() * 900000);
 }
 
-ProductRouter.put("/transfer-ownership/:id", async (req: any, res: any) => {
+ProductRouter.put("/transfer-ownership/:id", authMiddleware,async (req: any, res: any) => {
   const redisClient = await RedisClientSingleton.getRedisClient();
-  // if(!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
+  if(!req.user || !req.user.id) return res.status(401).json({ error: "Unauthorized" });
 
-  const user_id = req?.user?.id || "ada77e93-d597-4dcf-abb9-d96602e00d5d";
+  const user_id = req?.user?.id;
 
   const { id } = req.params;
 
@@ -104,9 +104,11 @@ ProductRouter.put("/transfer-ownership/:id", async (req: any, res: any) => {
   });
 });
 
-ProductRouter.post("/verify-otp", async (req: any, res: any) => {
-  const { user_id, otp, requested_user_id, product_id } = req.body;
+ProductRouter.post("/verify-otp", authMiddleware, async (req: any, res: any) => {
+  const { otp, requested_user_id, product_id } = req.body;
   const redisClient = await RedisClientSingleton.getRedisClient();
+  const user_id = req?.user?.id;
+  if(!user_id) return res.status(401).json({ error: "Unauthorized" });
   const storedOTP = await redisClient.get(user_id);
   if (storedOTP !== otp) return res.status(400).json({ error: "invalid otp" });
   await redisClient.del(user_id);
