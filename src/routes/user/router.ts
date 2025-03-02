@@ -18,7 +18,7 @@ UserRouter.post("/register", async (req: any, res: any) => {
         phone,
       },
     });
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, {
+    const token = jwt.sign({ id: user.id }, process.env.SECRET_KEY!, {
       expiresIn: "7d",
     });
     return res.status(201).json({
