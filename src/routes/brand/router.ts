@@ -64,6 +64,11 @@ BrandRouter.post("/on-board", async (req: any, res: any) => {
   }
 });
 
+function generate4DigitNumber() {
+  const randomNumber = Math.floor(1000 + Math.random() * 9000);
+  return randomNumber;
+}
+
 BrandRouter.post("/add-edition", async (req: any, res: any) => {
   // if (!req.user || !req.user.brand_name)
   //   return res.status(401).json({ error: "Unauthorized" });
@@ -110,24 +115,22 @@ BrandRouter.post("/add-edition", async (req: any, res: any) => {
       },
     });
 
-    const productPromises = [];
-    for (let i = 0; i < product_quantity; i++) {
-      productPromises.push(
-        prisma.product.create({
-          data: {
-            title: product_title,
-            specification: product_specification,
-            color:
-              product_colors[Math.floor(Math.random() * product_colors.length)],
-            edition_id: edition.id,
-            brandId: brand.id,
-          },
-        })
-      );
-    }
+    
 
-    // Wait for all product creation promises to resolve
-    await Promise.all(productPromises);
+
+    for (let i = 0; i < product_quantity; i++) {
+      await prisma.product.create({
+        data: {
+          id: brand_name.toUpperCase() + '-' + generate4DigitNumber(),
+          title: product_title,
+          specification: product_specification,
+          color:
+          product_colors[Math.floor(Math.random() * product_colors.length)],
+          edition_id: edition.id,
+          brandId: brand.id,
+        },
+      });
+    }
 
     return res.status(201).json(edition);
   } catch (error) {

@@ -33,20 +33,24 @@ UserRouter.post("/login", async (req: any, res: any) => {
   const { email, password } = req.body;
   if (!email || !password)
     return res.status(400).json({ error: "invalid input" });
-  const user = await prisma.user.findUnique({
-    where: {
-      email,
-    },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
   if (!user) return res.status(404).json({ error: "user not found" });
   if (user.password !== password)
     return res.status(401).json({ error: "invalid password" });
-  const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, {
+  const token = jwt.sign({ id: user.id }, process.env.SECRET_KEY!, {
     expiresIn: "7d",
   });
-  return res.status(200).json({
-    token,
-  });
+    return res.status(200).json({
+      token,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "something went wrong" });
+  }
 });
 
 UserRouter.get("/profile", authMiddleware, async (req: any, res: any) => {
