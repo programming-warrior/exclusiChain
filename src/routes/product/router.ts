@@ -76,7 +76,7 @@ ProductRouter.put("/transfer-ownership/:id", async (req: any, res: any) => {
 
   if (receiver) {
     const params = {
-      Message: `Your OTP for product transfer is: ${otp}. Valid for 5 minutes.`,
+      Message: `Your OTP for product transfer has been sent to your phone. Valid for 5 minutes.`,
       PhoneNumber: receiver.phone,
       MessageAttributes: {
         "AWS.SNS.SMS.SenderID": {
@@ -99,17 +99,34 @@ ProductRouter.put("/transfer-ownership/:id", async (req: any, res: any) => {
   // const txHash = await aptosService.transfer(product.ownerId, user.id, product.id);
 
   return res.status(200).json({
-    message: "product transfer request send",
-    txHash: "txHash",
+    product_id: product.id,
+    requested_user_id: user_id,
   });
 });
 
 ProductRouter.post("/verify-otp", async (req: any, res: any) => {
-  const { user_id, otp } = req.body;
+  const { user_id, otp, requested_user_id, product_id } = req.body;
   const redisClient = await RedisClientSingleton.getRedisClient();
   const storedOTP = await redisClient.get(user_id);
   if (storedOTP !== otp) return res.status(400).json({ error: "invalid otp" });
   await redisClient.del(user_id);
+
+  const user = await prisma.user.findUnique({
+    where: {
+      id: requested_user_id,
+    },
+  });
+  if (!user) return res.status(500).json({ error: "something went wrong" });
+  
+  await prisma.product.update({
+    where: {
+      id: product_id,
+    },
+    data: {
+      ownerId: requested_user_id
+    },
+  });
+
   return res.status(200).json({ message: "otp verified" });
 });
 
