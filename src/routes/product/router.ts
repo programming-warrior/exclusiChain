@@ -77,7 +77,7 @@ ProductRouter.put("/transfer-ownership/:id", authMiddleware,async (req: any, res
 
   if (receiver) {
     const params = {
-      Message: `Your OTP for product transfer has been sent to your phone. Valid for 5 minutes.`,
+      Message: `Your OTP: ${otp} for product transfer. Valid for 5 minutes.`,
       PhoneNumber: receiver.phone,
       MessageAttributes: {
         "AWS.SNS.SMS.SenderID": {
@@ -107,12 +107,17 @@ ProductRouter.put("/transfer-ownership/:id", authMiddleware,async (req: any, res
 
 ProductRouter.post("/verify-otp", authMiddleware, async (req: any, res: any) => {
   const { otp, requested_user_id, product_id } = req.body;
+  console.log(otp)
+  console.log(requested_user_id)
+  console.log(product_id)
   const redisClient = await RedisClientSingleton.getRedisClient();
   const user_id = req?.user?.id;
   if(!user_id) return res.status(401).json({ error: "Unauthorized" });
-  const storedOTP = await redisClient.get(user_id);
-  if (storedOTP !== otp) return res.status(400).json({ error: "invalid otp" });
-  await redisClient.del(user_id);
+  try {
+    const storedOTP = await redisClient.get(requested_user_id);
+    console.log("storedOTP", storedOTP);
+    if (storedOTP !== otp) return res.status(400).json({ error: "invalid otp" });
+    await redisClient.del(user_id);
 
   const user = await prisma.user.findUnique({
     where: {
@@ -130,7 +135,11 @@ ProductRouter.post("/verify-otp", authMiddleware, async (req: any, res: any) => 
     },
   });
 
-  return res.status(200).json({ message: "otp verified" });
+    return res.status(200).json({ message: "otp verified" });
+  } catch (error) {
+    console.error("Error verifying OTP:", error);
+    return res.status(500).json({ error: "Failed to verify OTP" });
+  }
 });
 
 ProductRouter.post("/authenticate-product", async (req: any, res: any) => {
