@@ -25,13 +25,13 @@ ProductRouter.put("/transfer-ownership/:id", authMiddleware,async (req: any, res
 
   const { id } = req.params;
   console.log(id);
-
-  if (!user_id) return res.status(400).json({ error: "invalid input" });
-  const product = await prisma.product.findUnique({
-    where: {
-      id,
-    },
-  });
+  
+    if (!user_id) return res.status(400).json({ error: "invalid input" });
+    const product = await prisma.product.findUnique({
+      where: {
+        id,
+      },
+    });
   if (!product) return res.status(404).json({ error: "product not found" });
   const user = await prisma.user.findUnique({
     where: {
@@ -100,6 +100,7 @@ ProductRouter.put("/transfer-ownership/:id", authMiddleware,async (req: any, res
   // const txHash = await aptosService.transfer(product.ownerId, user.id, product.id);
 
   return res.status(200).json({
+    success: true,
     product_id: product.id,
     requested_user_id: user_id,
   });
