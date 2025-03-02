@@ -136,7 +136,7 @@ ProductRouter.post("/verify-otp", authMiddleware, async (req: any, res: any) => 
     },
   });
 
-    return res.status(200).json({ message: "otp verified" });
+    return res.status(200).json({success: true, message: "otp verified" });
   } catch (error) {
     console.error("Error verifying OTP:", error);
     return res.status(500).json({ error: "Failed to verify OTP" });
