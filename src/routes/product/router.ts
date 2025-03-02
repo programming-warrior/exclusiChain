@@ -24,6 +24,7 @@ ProductRouter.put("/transfer-ownership/:id", authMiddleware,async (req: any, res
   const user_id = req?.user?.id;
 
   const { id } = req.params;
+  console.log(id);
 
   if (!user_id) return res.status(400).json({ error: "invalid input" });
   const product = await prisma.product.findUnique({

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const SECRET_KEY = process.env.JWT_SECRET || "your_secret_key";
+const SECRET_KEY = process.env.SECRET_KEY || "your_secret_key";
 
 interface AuthRequest extends Request {
   user?: any;
@@ -19,8 +19,10 @@ export const authMiddleware = (
   }
 
   try {
+    console.log(token);
     const decoded = jwt.verify(token, SECRET_KEY);
     req.user = decoded;
+    console.log(decoded);
     next();
   } catch (err) {
     return res.status(403).json({ message: "Invalid or expired token." });
