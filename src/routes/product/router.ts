@@ -2,10 +2,19 @@ import { Router } from "express";
 import { authMiddleware } from "../../utils/auth";
 import prisma from "../../utils/db";
 import RedisClientSingleton from "../../utils/redis";
+import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 const ProductRouter = Router();
 
+const snsClient = new SNSClient({
+  region: process.env.AWS_REGION || "ap-south-1",
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+  },
+});
+
 function generateOTP(): number {
-    return Math.floor(100000 + Math.random() * 900000);
+  return Math.floor(100000 + Math.random() * 900000);
 }
 
 ProductRouter.put("/transfer-ownership/:id", async (req: any, res: any) => {
@@ -29,14 +38,27 @@ ProductRouter.put("/transfer-ownership/:id", async (req: any, res: any) => {
     },
   });
   if (!user) return res.status(404).json({ error: "user not found" });
-  
+
+  const receiver = await prisma.user.findUnique({
+    where: {
+      id: product.ownerId || "",
+    },
+  });
+
+  if (!receiver) {
+    return res.status(400).json({ error: "Product hasn't been sold yet" });
+  }
+
   const otp = generateOTP();
+
+  console.log(otp);
+
   await redisClient.set(user_id, otp, { EX: 60 * 5 });
 
   await redisClient.lPush(
     "NOTIFICATION_QUEUE",
     JSON.stringify({
-      //   receiver_id: product.ownerId,
+      receiver_id: product.ownerId,
       event: "PRODUCT_TRANSFER_REQUEST",
       data: {
         sender_id: user_id,
@@ -51,6 +73,29 @@ ProductRouter.put("/transfer-ownership/:id", async (req: any, res: any) => {
       },
     })
   );
+
+  if (receiver) {
+    const params = {
+      Message: `Your OTP for product transfer is: ${otp}. Valid for 5 minutes.`,
+      PhoneNumber: receiver.phone,
+      MessageAttributes: {
+        "AWS.SNS.SMS.SenderID": {
+          DataType: "String",
+          StringValue: "PRODUCT",
+        },
+        "AWS.SNS.SMS.SMSType": {
+          DataType: "String",
+          StringValue: "Transactional",
+        },
+      },
+    };
+
+    const command = new PublishCommand(params);
+    const response = await snsClient.send(command);
+
+    console.log(response);
+  }
+
   // const txHash = await aptosService.transfer(product.ownerId, user.id, product.id);
 
   return res.status(200).json({
@@ -65,7 +110,7 @@ ProductRouter.post("/verify-otp", async (req: any, res: any) => {
   const storedOTP = await redisClient.get(user_id);
   if (storedOTP !== otp) return res.status(400).json({ error: "invalid otp" });
   await redisClient.del(user_id);
-  return res.status(200).json({ message: "otp verified" }); 
+  return res.status(200).json({ message: "otp verified" });
 });
 
 ProductRouter.post("/authenticate-product", async (req: any, res: any) => {
